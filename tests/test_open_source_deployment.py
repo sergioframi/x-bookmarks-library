@@ -28,7 +28,7 @@ def test_image_builds_the_extension_and_uses_a_fixed_internal_port():
 
 
 def test_public_defaults_do_not_contain_private_deployment_coordinates():
-    public_files=[ROOT/"compose.yaml",ROOT/".env.example",ROOT/"README.md",ROOT/"README.es.md"]
+    public_files=[ROOT/"compose.yaml",ROOT/".env.example",ROOT/"README.md"]
     combined="\n".join(path.read_text() for path in public_files)
     assert "http://192.168." not in combined
     assert "/home/" not in combined

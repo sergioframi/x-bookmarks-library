@@ -5,7 +5,6 @@ imports
 models
 logs
 backups
-benchmark
 tests
 app/assets/*.zip
 __pycache__

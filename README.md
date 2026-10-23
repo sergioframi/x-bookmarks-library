@@ -1,7 +1,5 @@
 # X Bookmarks Library
 
-[Versión en español](README.es.md)
-
 A private, self-hosted home for your X bookmarks. It imports them through a
 Chrome extension, makes them searchable, discovers useful categories locally,
 and gives you flexible column-based views.
