@@ -7,6 +7,8 @@ and gives you flexible column-based views.
 No SaaS account, telemetry, or generative AI service is required. Your library
 stays on your machine.
 
+https://github.com/user-attachments/assets/861fc96a-da7c-478c-8269-584d80d70cb2
+
 ## What you get
 
 - Exact full-text search plus multilingual semantic search.
