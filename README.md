@@ -63,6 +63,8 @@ Raspberry Pi kernels that do not expose the memory controller.
 
 ## First run
 
+https://github.com/user-attachments/assets/ebddd382-19c4-4518-8b45-23b6398d6ea9
+
 The onboarding walks you through everything:
 
 1. Create the installation's only username and password.
