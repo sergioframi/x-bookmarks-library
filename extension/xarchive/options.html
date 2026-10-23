@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>xarchive · Library Fork</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>xarchive · Library Fork</h1>
+      <p class="subtitle">Keep a growing archive of your X.com bookmarks</p>
+    </header>
+
+    <!-- Status Section -->
+    <section id="status-section" class="card">
+      <h2>Status</h2>
+      <div id="cred-status" class="status-item">
+        <span class="status-dot" id="cred-dot"></span>
+        <span id="cred-text">Checking credentials...</span>
+      </div>
+      <div id="queryid-status" class="status-item">
+        <span class="status-dot" id="queryid-dot"></span>
+        <span id="queryid-text">Checking query IDs...</span>
+      </div>
+      <div id="user-status" class="status-item">
+        <span class="status-dot" id="user-dot"></span>
+        <span id="user-text">Checking user session...</span>
+      </div>
+      <p id="hint-text" class="hint" style="display:none;"></p>
+      <button id="btn-connection" class="secondary" disabled>Refresh X connection</button>
+      <p class="help">If X rejects a request, refresh the connection to capture current request settings. This briefly opens X tabs; your saved archive stays unchanged.</p>
+    </section>
+
+    <!-- Private library connection: primary setup, directly below status. -->
+    <section id="connector-section" class="card">
+      <h2>Private library</h2>
+      <p id="connector-status" class="connection-status" role="status">Not paired.</p>
+      <details id="connector-setup" class="inline-disclosure" open>
+        <summary>Pair or change private library</summary>
+        <div class="disclosure-body">
+          <label for="connector-url">Library URL</label>
+          <input id="connector-url" type="url" placeholder="http://library.local:32847" autocomplete="url">
+          <label for="connector-code">Pairing code</label>
+          <input id="connector-code" type="text" placeholder="ABCD-1234" autocomplete="one-time-code">
+          <label for="connector-name">Device name</label>
+          <input id="connector-name" type="text" maxlength="100" placeholder="Chrome on this computer">
+          <button id="btn-pair">Pair device</button>
+        </div>
+      </details>
+      <div id="connector-actions" class="button-row connector-buttons" hidden>
+        <button id="btn-sync-now">Sync saved archive</button>
+        <button id="btn-bootstrap" class="secondary" disabled>Recover from private library</button>
+      </div>
+      <p class="help">Your X session stays inside Chrome. Only the bookmark archive is sent to the configured private library.</p>
+    </section>
+
+    <!-- Controls Section -->
+    <section id="controls-section" class="card">
+      <label for="update-mode">Update from X</label>
+      <select id="update-mode">
+        <option value="full">Full refresh — all bookmarks and folders</option>
+        <option value="quick">Quick update — recent bookmarks only</option>
+      </select>
+      <p id="mode-help" class="help">Full refresh checks every page and folder. Your previous archive stays saved until collected data is safely merged. Keep this tab open.</p>
+      <div class="button-row">
+        <button id="btn-start" disabled>Full refresh</button>
+        <button id="btn-pause" style="display:none;">Pause</button>
+        <button id="btn-resume" style="display:none;">Resume</button>
+        <button id="btn-stop" style="display:none;">Stop</button>
+      </div>
+    </section>
+
+    <details id="library-section" class="card disclosure-card">
+      <summary><span>Saved archive</span><small>Backups and recovery</small></summary>
+      <div class="disclosure-body">
+        <p id="library-status" role="status" aria-live="polite">Loading saved archive…</p>
+        <p id="library-refresh" class="help"></p>
+        <div class="button-row">
+          <button id="btn-import" class="secondary">Import existing JSON</button>
+          <button id="btn-combined" disabled>Download combined archive</button>
+          <button id="btn-undo" class="secondary" disabled>Undo last update</button>
+        </div>
+        <input id="library-file" type="file" accept=".json,application/json" hidden>
+        <p class="help">Import an earlier export to start with your existing data. Updates add and refresh bookmarks; missing or unavailable posts never erase saved content. Each X account has a separate archive.</p>
+        <p class="help">The extension and viewer keep separate browser copies. Download the combined JSON here, then use <strong>Update from JSON</strong> in the viewer. Keep downloaded files as backups.</p>
+      </div>
+    </details>
+
+    <!-- Progress Section -->
+    <section id="progress-section" class="card" style="display:none;">
+      <h2>Progress</h2>
+      <div class="progress-bar-container">
+        <div class="progress-bar" id="progress-bar"></div>
+      </div>
+      <div class="progress-stats">
+        <div class="stat">
+          <span class="stat-label">Phase</span>
+          <span class="stat-value" id="stat-phase">--</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Bookmarks</span>
+          <span class="stat-value" id="stat-bookmarks">0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Pages</span>
+          <span class="stat-value" id="stat-pages">0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Folders</span>
+          <span class="stat-value" id="stat-folders">--</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Speed</span>
+          <span class="stat-value" id="stat-speed">--</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Elapsed</span>
+          <span class="stat-value" id="stat-elapsed">0:00</span>
+        </div>
+      </div>
+      <div id="rate-limit-notice" class="notice" style="display:none;">
+        <p>Rate limited. Waiting <span id="cooldown-timer"></span>...</p>
+      </div>
+    </section>
+
+    <!-- Log Section -->
+    <details id="log-section" class="card disclosure-card">
+      <summary><span>Diagnostics</span><small>Activity log</small></summary>
+      <div class="disclosure-body"><div id="log" class="log-container"></div></div>
+    </details>
+
+    <!-- Result Section (shown after complete or stop) -->
+    <section id="result-section" class="card" style="display:none;">
+      <h2 id="result-heading">Export Complete</h2>
+      <p id="result-account" class="help"></p>
+      <p id="result-coverage" class="help" role="status"></p>
+      <div class="complete-stats">
+        <p><strong id="result-total">0</strong> bookmarks collected in this scan</p>
+        <p><strong id="result-available">0</strong> available, <strong id="result-unavailable">0</strong> unavailable</p>
+        <div id="result-unavailable-reasons" style="display:none;"></div>
+        <p id="result-folder-summary"><strong id="result-folders">0</strong> folders found</p>
+        <p>Duration: <strong id="result-duration">0:00</strong></p>
+      </div>
+      <div class="button-row">
+        <button id="btn-download">Download latest snapshot</button>
+        <button id="btn-recover" class="secondary">Merge collected snapshot</button>
+      </div>
+      <p class="help">A snapshot contains only this scan’s results. The combined archive above includes previously saved bookmarks too. Pause/Resume works while this tab stays open. After closing it, collected data can be recovered here; the next scan starts from the beginning.</p>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <span id="version-info"></span>
+      &middot; Based on xarchive <span id="upstream-version-info"></span>
+      &middot; <a href="https://github.com/sytelus/xarchive" target="_blank" rel="noopener">Original project: sytelus/xarchive</a>
+      &middot; <a href="https://github.com/sergioframi/x-bookmarks-library" target="_blank" rel="noopener">Library fork source</a>
+    </footer>
+  </div>
+
+  <dialog id="library-review" aria-labelledby="library-review-title">
+    <h2 id="library-review-title">Review archive import</h2>
+    <p id="library-review-summary"></p>
+    <p id="library-review-coverage" class="help"></p>
+    <p id="library-review-expectation" class="help">Save adds and refreshes bookmarks for this account. Older saved content stays. Undo restores your previous archive.</p>
+    <p id="library-review-error" role="alert"></p>
+    <div class="button-row"><button id="library-cancel" class="secondary">Cancel</button><button id="library-save">Save update</button></div>
+  </dialog>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>

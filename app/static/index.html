@@ -1,0 +1,827 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta id="theme-color" name="theme-color" content="#e3eff8" />
+    <title>Biblioteca X</title>
+    <script src="/static/bootstrap.js?v=20261022-1"></script>
+    <link rel="stylesheet" href="/static/styles.css?v=20261022-34" />
+  </head>
+  <body>
+    <a class="skip-link" href="#results">Saltar a resultados</a>
+    <div id="onboarding" class="onboarding overlay hidden" data-i18n-skip>
+      <header class="onboarding-toolbar">
+        <div class="onboarding-brand">
+          <span class="brand small">XB</span
+          ><span
+            ><strong>Biblioteca X</strong
+            ><small>Tu archivo personal</small></span
+          >
+        </div>
+        <div class="appearance-picker onboarding-appearance">
+          <button
+            id="onboarding-theme"
+            class="ghost theme-toggle"
+            type="button"
+            aria-label="Change theme"
+          >
+            <span id="onboarding-theme-icon" aria-hidden="true">☾</span></button
+          ><button
+            id="onboarding-palette"
+            class="ghost palette-toggle"
+            type="button"
+            aria-label="Choose palette"
+            aria-expanded="false"
+            aria-controls="onboarding-palette-menu"
+          >
+            <span class="palette-glyph" aria-hidden="true"
+              ><i></i><i></i><i></i
+            ></span>
+          </button>
+          <div
+            id="onboarding-palette-menu"
+            class="palette-menu hidden"
+            role="menu"
+            aria-label="Color palettes"
+          >
+            <div class="palette-menu-head">
+              <strong id="onboarding-palette-title"></strong
+              ><small id="onboarding-palette-help"></small>
+            </div>
+            <button
+              data-onboarding-palette="mono"
+              role="menuitemradio"
+              aria-checked="false"
+            >
+              <span class="palette-swatch mono" aria-hidden="true"
+                ><i></i><i></i><i></i></span
+              ><span
+                ><strong data-onboarding-palette-name="mono"></strong
+                ><small data-onboarding-palette-help="mono"></small></span
+              ><b aria-hidden="true">✓</b></button
+            ><button
+              data-onboarding-palette="ice"
+              role="menuitemradio"
+              aria-checked="false"
+            >
+              <span class="palette-swatch ice" aria-hidden="true"
+                ><i></i><i></i><i></i></span
+              ><span
+                ><strong data-onboarding-palette-name="ice"></strong
+                ><small data-onboarding-palette-help="ice"></small></span
+              ><b aria-hidden="true">✓</b></button
+            ><button
+              data-onboarding-palette="lavender"
+              role="menuitemradio"
+              aria-checked="false"
+            >
+              <span class="palette-swatch lavender" aria-hidden="true"
+                ><i></i><i></i><i></i></span
+              ><span
+                ><strong data-onboarding-palette-name="lavender"></strong
+                ><small data-onboarding-palette-help="lavender"></small></span
+              ><b aria-hidden="true">✓</b></button
+            ><button
+              data-onboarding-palette="rose"
+              role="menuitemradio"
+              aria-checked="false"
+            >
+              <span class="palette-swatch rose" aria-hidden="true"
+                ><i></i><i></i><i></i></span
+              ><span
+                ><strong data-onboarding-palette-name="rose"></strong
+                ><small data-onboarding-palette-help="rose"></small></span
+              ><b aria-hidden="true">✓</b></button
+            ><button
+              data-onboarding-palette="coral"
+              role="menuitemradio"
+              aria-checked="false"
+            >
+              <span class="palette-swatch coral" aria-hidden="true"
+                ><i></i><i></i><i></i></span
+              ><span
+                ><strong data-onboarding-palette-name="coral"></strong
+                ><small data-onboarding-palette-help="coral"></small></span
+              ><b aria-hidden="true">✓</b>
+            </button>
+          </div>
+          <button
+            id="onboarding-language"
+            class="ghost language-toggle"
+            type="button"
+            aria-label="Change language"
+          >
+            EN
+          </button>
+        </div>
+      </header>
+      <main class="onboarding-shell">
+        <div class="onboarding-progress">
+          <span id="onboarding-step-label"></span>
+          <div><i id="onboarding-progress-bar"></i></div>
+        </div>
+        <section
+          id="onboarding-content"
+          class="onboarding-card"
+          aria-live="polite"
+        ></section>
+      </main>
+    </div>
+    <div id="login" class="overlay hidden">
+      <form id="login-form" class="login-card">
+        <div class="brand">XB</div>
+        <h1>Tu biblioteca privada</h1>
+        <p>Todo lo que guardaste en X, organizado y fácil de encontrar.</p>
+        <label
+          >Usuario<input
+            id="login-user"
+            autocomplete="username"
+            required /></label
+        ><label
+          >Contraseña<input
+            id="login-pass"
+            type="password"
+            autocomplete="current-password"
+            required /></label
+        ><button class="primary">Entrar</button>
+        <p id="login-error" class="error"></p>
+      </form>
+    </div>
+    <header class="topbar">
+      <button
+        id="menu"
+        class="icon-button"
+        aria-label="Abrir filtros"
+        aria-controls="sidebar"
+        aria-expanded="false"
+      >
+        ☰</button
+      ><a class="wordmark" href="/" aria-label="Biblioteca X"
+        ><span class="brand small">XB</span
+        ><span><strong>Biblioteca X</strong><small id="stats"></small></span
+      ></a>
+      <div class="appearance-picker">
+        <button
+          id="theme-toggle"
+          class="ghost theme-toggle app-tooltip"
+          type="button"
+          aria-label="Activar tema oscuro"
+          aria-pressed="false"
+          data-tooltip="Tema oscuro"
+        >
+          <span id="theme-icon" aria-hidden="true">☾</span></button
+        ><button
+          id="palette-toggle"
+          class="ghost palette-toggle app-tooltip"
+          type="button"
+          aria-label="Previsualizar paletas"
+          aria-expanded="false"
+          aria-controls="palette-menu"
+          data-tooltip="Paletas"
+        >
+          <span class="palette-glyph" aria-hidden="true"
+            ><i></i><i></i><i></i
+          ></span>
+        </button>
+        <div
+          id="palette-menu"
+          class="palette-menu hidden"
+          role="menu"
+          aria-label="Paletas de color"
+        >
+          <div class="palette-menu-head">
+            <strong>Previsualizar paleta</strong
+            ><small>Combínala con claro u oscuro</small>
+          </div>
+          <button
+            data-palette-choice="mono"
+            role="menuitemradio"
+            aria-checked="false"
+          >
+            <span class="palette-swatch mono" aria-hidden="true"
+              ><i></i><i></i><i></i></span
+            ><span
+              ><strong>Monocroma</strong
+              ><small>Grises limpios y neutros</small></span
+            ><b aria-hidden="true">✓</b></button
+          ><button
+            data-palette-choice="ice"
+            role="menuitemradio"
+            aria-checked="false"
+          >
+            <span class="palette-swatch ice" aria-hidden="true"
+              ><i></i><i></i><i></i></span
+            ><span
+              ><strong>Azul hielo</strong
+              ><small>Fría, ligera y minimalista</small></span
+            ><b aria-hidden="true">✓</b></button
+          ><button
+            data-palette-choice="lavender"
+            role="menuitemradio"
+            aria-checked="false"
+          >
+            <span class="palette-swatch lavender" aria-hidden="true"
+              ><i></i><i></i><i></i></span
+            ><span
+              ><strong>Lavanda nube</strong
+              ><small>Suave y contemporánea</small></span
+            ><b aria-hidden="true">✓</b></button
+          ><button
+            data-palette-choice="rose"
+            role="menuitemradio"
+            aria-checked="false"
+          >
+            <span class="palette-swatch rose" aria-hidden="true"
+              ><i></i><i></i><i></i></span
+            ><span
+              ><strong>Rosa cuarzo</strong
+              ><small>Serena y ligeramente cálida</small></span
+            ><b aria-hidden="true">✓</b></button
+          ><button
+            data-palette-choice="coral"
+            role="menuitemradio"
+            aria-checked="false"
+          >
+            <span class="palette-swatch coral" aria-hidden="true"
+              ><i></i><i></i><i></i></span
+            ><span
+              ><strong>Arena y coral</strong
+              ><small>Luminosa y editorial</small></span
+            ><b aria-hidden="true">✓</b>
+          </button>
+        </div>
+      </div>
+      <button
+        id="language-toggle"
+        class="ghost language-toggle app-tooltip"
+        type="button"
+        aria-label="Cambiar a inglés"
+        data-tooltip="English"
+        data-i18n-skip
+      >
+        EN
+      </button>
+      <nav class="mode-nav" aria-label="Vista principal">
+        <button id="timeline-mode" class="active" aria-pressed="true">
+          Timeline</button
+        ><button id="views-mode" aria-pressed="false">Vistas</button>
+      </nav>
+      <button
+        id="taxonomy-button"
+        class="ghost topbar-action hidden"
+        aria-label="Revisar categorías"
+      >
+        <span aria-hidden="true">✦</span
+        ><span class="topbar-action-label">Categorías</span></button
+      ><button
+        id="extension-button"
+        class="ghost topbar-action"
+        aria-label="Abrir sincronización"
+      >
+        <span id="sync-dot" class="sync-dot" aria-hidden="true"></span
+        ><span class="topbar-action-label">Sincronización</span></button
+      ><button
+        id="password-button"
+        class="ghost account-action"
+        aria-label="Cambiar contraseña"
+      >
+        <span class="account-action-label">Contraseña</span></button
+      ><button id="logout" class="ghost">Salir</button>
+    </header>
+    <div id="filter-backdrop" class="backdrop hidden"></div>
+    <div id="timeline-workspace" class="layout">
+      <main>
+        <section class="searchbar">
+          <div class="search-input">
+            <span aria-hidden="true">⌕</span
+            ><input
+              id="query"
+              type="search"
+              placeholder="Busca una tecnología, problema o idea…"
+              autocomplete="off"
+              aria-label="Buscar en la biblioteca"
+            /><button
+              id="search-shortcut"
+              class="shortcut-button"
+              type="button"
+              aria-label="Enfocar la búsqueda"
+            >
+              ⌘ K
+            </button>
+          </div>
+          <div class="search-meta">
+            <span id="search-status" class="hidden" aria-live="polite"></span
+            ><button
+              id="filter-trigger"
+              class="filter-trigger"
+              aria-controls="sidebar"
+              aria-expanded="false"
+            >
+              Filtros <b id="filter-trigger-count" class="hidden">0</b>
+            </button>
+          </div>
+          <div
+            id="active-filters"
+            class="active-filters hidden"
+            aria-label="Filtros activos"
+          ></div>
+        </section>
+        <aside id="sidebar" aria-label="Filtros de búsqueda">
+          <div class="filter-head">
+            <div>
+              <span class="eyebrow">Explorar</span>
+              <h2>Filtros</h2>
+            </div>
+            <button
+              id="close-filters"
+              class="close-panel"
+              aria-label="Cerrar filtros"
+            >
+              ×
+            </button>
+          </div>
+          <p class="filter-intro">
+            Combina opciones para acotar tu biblioteca. Dentro de cada grupo se
+            acepta cualquiera de las seleccionadas.
+          </p>
+          <div class="filter-overview">
+            <span id="filter-summary">Sin filtros activos</span
+            ><button id="clear-filters" class="link" disabled>
+              Restablecer
+            </button>
+          </div>
+          <details class="facet">
+            <summary>
+              <span>Categorías<small>Áreas temáticas amplias</small></span
+              ><b id="category-selected" class="facet-count hidden">0</b>
+            </summary>
+            <div class="facet-body">
+              <label class="facet-search"
+                ><span>⌕</span
+                ><input
+                  id="category-search"
+                  type="search"
+                  placeholder="Buscar categoría"
+                  aria-label="Buscar categoría"
+              /></label>
+              <div
+                id="category-filters"
+                class="facet-options"
+                role="group"
+                aria-label="Categorías"
+              ></div>
+            </div>
+          </details>
+          <details class="facet">
+            <summary>
+              <span
+                >Etiquetas<small>Tecnologías y conceptos concretos</small></span
+              ><b id="tag-selected" class="facet-count hidden">0</b>
+            </summary>
+            <div class="facet-body">
+              <label class="facet-search"
+                ><span>⌕</span
+                ><input
+                  id="tag-search"
+                  type="search"
+                  placeholder="Buscar etiqueta"
+                  aria-label="Buscar etiqueta"
+              /></label>
+              <div
+                id="tag-filters"
+                class="facet-options"
+                role="group"
+                aria-label="Etiquetas"
+              ></div>
+              <button id="toggle-tags" class="show-more link"></button>
+            </div>
+          </details>
+          <details class="facet">
+            <summary>
+              <span>Autores<small>Cuenta que publicó el contenido</small></span
+              ><b id="author-selected" class="facet-count hidden">0</b>
+            </summary>
+            <div class="facet-body">
+              <label class="facet-search"
+                ><span>⌕</span
+                ><input
+                  id="author-search"
+                  type="search"
+                  placeholder="Buscar autor"
+                  aria-label="Buscar autor"
+              /></label>
+              <div
+                id="author-filters"
+                class="facet-options"
+                role="group"
+                aria-label="Autores"
+              ></div>
+              <button id="toggle-authors" class="show-more link"></button>
+            </div>
+          </details>
+          <details class="facet">
+            <summary>
+              <span>Formato<small>Qué tipo de recurso es</small></span
+              ><b id="type-selected" class="facet-count hidden">0</b>
+            </summary>
+            <div class="facet-body">
+              <div
+                id="type-filters"
+                class="type-options"
+                role="group"
+                aria-label="Formato"
+              ></div>
+            </div>
+          </details>
+          <details class="facet">
+            <summary>
+              <span
+                >Contenido y fecha<small>Propiedades adicionales</small></span
+              ><b id="more-selected" class="facet-count hidden">0</b>
+            </summary>
+            <div class="facet-body">
+              <label class="check"
+                ><input id="has-media" type="checkbox" /><span
+                  >Con multimedia</span
+                ></label
+              ><label class="check"
+                ><input id="has-links" type="checkbox" /><span
+                  >Con enlaces</span
+                ></label
+              >
+              <div class="date-grid">
+                <label>Desde<input id="date-from" type="date" /></label
+                ><label>Hasta<input id="date-to" type="date" /></label>
+              </div>
+            </div>
+          </details>
+          <button id="apply-mobile" class="primary mobile-apply">
+            Ver resultados
+          </button>
+        </aside>
+        <section class="result-head">
+          <div>
+            <span class="eyebrow">Tu archivo personal</span>
+            <h1>Guardados</h1>
+          </div>
+          <span id="result-count"></span>
+        </section>
+        <div id="results" class="results" aria-live="polite"></div>
+        <div class="pager">
+          <button id="prev">← Anterior</button><span id="page-label"></span
+          ><button id="next">Siguiente →</button>
+        </div>
+      </main>
+    </div>
+    <section
+      id="views-workspace"
+      class="views-workspace hidden"
+      aria-label="Vistas personalizadas"
+    >
+      <header class="views-toolbar">
+        <div class="views-title">
+          <span class="eyebrow">Vistas</span>
+          <div class="views-picker">
+            <select
+              id="view-selector"
+              aria-label="Seleccionar o crear una vista"
+            ></select>
+            <div
+              id="view-quick-actions"
+              class="view-quick-actions hidden"
+              aria-label="Acciones de la vista"
+            >
+              <button
+                id="add-column"
+                class="view-icon app-tooltip"
+                aria-label="Añadir columna"
+                data-tooltip="Añadir columna"
+              >
+                ＋</button
+              ><button
+                id="refresh-view"
+                class="view-icon view-refresh app-tooltip"
+                aria-label="Refrescar todas las columnas"
+                data-tooltip="Refrescar todas las columnas"
+              >
+                <span class="refresh-glyph" aria-hidden="true">↻</span></button
+              ><button
+                id="rename-view"
+                class="view-icon app-tooltip"
+                aria-label="Renombrar vista"
+                data-tooltip="Renombrar vista"
+              >
+                ✎</button
+              ><button
+                id="duplicate-view"
+                class="view-icon app-tooltip"
+                aria-label="Duplicar vista"
+                data-tooltip="Duplicar vista"
+              >
+                ⧉</button
+              ><button
+                id="default-view"
+                class="view-icon app-tooltip"
+                aria-label="Usar como vista de inicio"
+                aria-pressed="false"
+                data-tooltip="Usar como vista de inicio"
+              >
+                ☆</button
+              ><button
+                id="delete-view"
+                class="view-icon danger-icon app-tooltip"
+                aria-label="Eliminar vista"
+                data-tooltip="Eliminar vista"
+              >
+                ⌫
+              </button>
+            </div>
+            <span
+              id="view-save-status"
+              class="save-status"
+              aria-live="polite"
+            ></span>
+          </div>
+        </div>
+      </header>
+      <div id="views-empty" class="views-empty">
+        <div>
+          <span class="eyebrow">Tu propio TweetDeck</span>
+          <h1>Crea una vista por categorías</h1>
+          <p>
+            Añade varias columnas, ordénalas arrastrando y guarda el panel para
+            todos tus dispositivos.
+          </p>
+          <button id="empty-new-view" class="primary">
+            Crear primera vista
+          </button>
+        </div>
+      </div>
+      <div id="view-board" class="view-board hidden" aria-live="polite"></div>
+    </section>
+    <dialog id="detail" class="reader-dialog">
+      <button id="close-detail" class="dialog-close" aria-label="Cerrar">
+        ×
+      </button>
+      <div id="detail-content"></div>
+    </dialog>
+    <dialog id="organize" class="organize-drawer">
+      <button id="close-organize" class="dialog-close" aria-label="Cerrar">
+        ×</button
+      ><span class="eyebrow">Organización</span>
+      <div class="organize-heading">
+        <div>
+          <h2 id="organize-title">Organizar publicación</h2>
+          <p id="organize-author" class="handle"></p>
+        </div>
+        <span id="organize-save-status" class="save-status" aria-live="polite"
+          >Guardado</span
+        >
+      </div>
+      <div id="organize-content"></div>
+    </dialog>
+    <dialog id="extension-dialog" class="sync-dialog">
+      <button id="close-extension" class="dialog-close" aria-label="Cerrar">
+        ×</button
+      ><span class="eyebrow">Este navegador y esta biblioteca</span>
+      <h2>Sincronización con X</h2>
+      <p>La extensión usa la sesión de X de este Chrome y envía los guardados directamente a esta instalación privada.</p>
+      <section class="sync-card">
+        <div class="sync-status-line">
+          <span id="sync-panel-dot" class="sync-dot" aria-hidden="true"></span>
+          <div>
+            <strong id="sync-local-title">Comprobando extensión…</strong
+            ><small id="sync-local-detail"
+              >Esperando respuesta de Chrome.</small
+            >
+          </div>
+        </div>
+        <div id="sync-actions" class="sync-actions hidden">
+          <button id="sync-quick" class="primary">Sincronizar ahora</button
+          ><button id="sync-full" class="secondary">Revisión completa</button>
+        </div>
+        <div id="sync-progress" class="sync-progress hidden" aria-live="polite">
+          <div>
+            <span id="sync-progress-label">Preparando…</span
+            ><strong id="sync-progress-count"></strong>
+          </div>
+          <div class="sync-progress-track"><span></span></div>
+        </div>
+      </section>
+      <section
+        id="server-enrichment"
+        class="server-enrichment hidden"
+        aria-live="polite"
+      >
+        <div class="sync-section-heading">
+          <div>
+            <span class="eyebrow">Procesamiento local</span>
+            <strong id="server-progress-title">Preparando…</strong>
+          </div>
+          <strong id="server-progress-percent"></strong>
+        </div>
+        <div class="server-progress-track">
+          <span id="server-progress-bar"></span>
+        </div>
+        <small id="server-progress-detail"></small>
+      </section>
+      <details id="sync-diagnostics-panel" class="sync-inspector">
+        <summary>Diagnóstico</summary>
+        <div id="sync-diagnostics" class="sync-diagnostics"></div>
+      </details>
+      <details id="sync-log-panel" class="sync-inspector">
+        <summary>Log</summary>
+        <div
+          id="sync-combined-log"
+          class="sync-combined-log"
+          role="log"
+          aria-live="polite"
+        ></div>
+      </details>
+      <details id="extension-setup" class="extension-setup">
+        <summary>Instalar o conectar la extensión</summary>
+        <p>La dirección se obtiene de esta pestaña y permanece en Chrome; no se publica ni se envía a ningún servicio externo.</p>
+        <div id="extension-package" class="extension-panel">
+          Cargando paquete…
+        </div>
+        <ol class="install-steps">
+          <li>
+            Descarga, descomprime e instala el ZIP desde
+            <code>chrome://extensions</code> usando
+            <strong>Cargar descomprimida</strong>.
+          </li>
+          <li>Mantén esta aplicación abierta y genera el código temporal.</li>
+          <li>
+            Pulsa una vez el icono de xarchive: la extensión reconocerá esta
+            dirección privada.
+          </li>
+          <li>
+            Pega el código y confirma <strong>Emparejar</strong>. Las siguientes
+            sincronizaciones se iniciarán desde aquí.
+          </li>
+        </ol>
+        <button id="new-pairing-code" class="primary">
+          Generar código de emparejamiento
+        </button>
+        <div
+          id="pairing-code"
+          class="pairing-code hidden"
+          aria-live="polite"
+        ></div>
+      </details>
+      <h3>Última actividad</h3>
+      <div id="sync-server-status" class="sync-server-status">
+        Todavía no hay sincronizaciones registradas.
+      </div>
+      <h3>Dispositivos</h3>
+      <div id="extension-devices" class="device-list"></div>
+    </dialog>
+    <dialog id="password-dialog" class="password-dialog">
+      <button id="close-password" class="dialog-close" aria-label="Cerrar">
+        ×</button
+      ><span class="eyebrow">Seguridad de la cuenta</span>
+      <h2>Cambiar contraseña</h2>
+      <p>
+        Al guardar se cerrarán las demás sesiones abiertas. Este navegador
+        seguirá conectado.
+      </p>
+      <form id="password-form" class="password-form">
+        <label
+          >Contraseña actual<input
+            id="current-password"
+            type="password"
+            autocomplete="current-password"
+            required /></label
+        ><label
+          >Nueva contraseña<input
+            id="new-password"
+            type="password"
+            autocomplete="new-password"
+            minlength="12"
+            maxlength="500"
+            required
+          /><small>Mínimo 12 caracteres.</small></label
+        ><label
+          >Repetir nueva contraseña<input
+            id="confirm-password"
+            type="password"
+            autocomplete="new-password"
+            minlength="12"
+            maxlength="500"
+            required
+        /></label>
+        <p id="password-error" class="error" role="alert"></p>
+        <button id="save-password" class="primary" type="submit">
+          Guardar nueva contraseña
+        </button>
+      </form>
+    </dialog>
+    <dialog id="taxonomy-dialog" class="config-dialog taxonomy-dialog">
+      <button id="close-taxonomy" class="dialog-close" aria-label="Cerrar">
+        ×</button
+      ><span class="eyebrow">Organización local</span>
+      <h2>Descubrir tus categorías</h2>
+      <p>
+        Analizamos los embeddings de esta biblioteca en la Raspberry. No se
+        envía contenido a servicios externos.
+      </p>
+      <div
+        id="taxonomy-discovery-status"
+        class="taxonomy-discovery-status"
+        aria-live="polite"
+      ></div>
+      <button id="discover-taxonomy" class="primary" type="button">
+        Descubrir categorías
+      </button>
+      <form id="taxonomy-discovery-form" class="hidden">
+        <div id="taxonomy-candidates" class="taxonomy-candidates"></div>
+        <p id="taxonomy-error" class="error" role="alert"></p>
+        <button id="apply-taxonomy" class="primary" type="submit">
+          Usar estas categorías
+        </button>
+      </form>
+    </dialog>
+    <dialog id="view-editor-dialog" class="config-dialog">
+      <button id="close-view-editor" class="dialog-close" aria-label="Cerrar">
+        ×</button
+      ><span class="eyebrow">Vistas personalizadas</span>
+      <h2 id="view-editor-title">Nueva vista</h2>
+      <form id="view-editor-form">
+        <label
+          >Nombre de la vista<input
+            id="view-name"
+            maxlength="100"
+            required
+            placeholder="Ej. Tecnología y aprendizaje"
+        /></label>
+        <section id="view-category-section">
+          <div class="config-section-head">
+            <strong>Columnas iniciales</strong
+            ><span>Selecciona una o varias categorías</span>
+          </div>
+          <label class="organize-search"
+            ><span>⌕</span
+            ><input
+              id="view-category-search"
+              type="search"
+              placeholder="Buscar categoría…"
+          /></label>
+          <div id="view-category-options" class="config-category-options"></div>
+        </section>
+        <p id="view-editor-error" class="error" role="alert"></p>
+        <button id="save-view-editor" class="primary" type="submit">
+          Crear vista
+        </button>
+      </form>
+    </dialog>
+    <dialog id="column-editor-dialog" class="config-dialog">
+      <button id="close-column-editor" class="dialog-close" aria-label="Cerrar">
+        ×</button
+      ><span class="eyebrow">Contenido de la columna</span>
+      <h2 id="column-editor-title">Añadir columna</h2>
+      <form id="column-editor-form">
+        <label
+          >Contenido<select id="column-category" required></select
+          ><small
+            >Elige la timeline general o una categoría concreta.</small
+          ></label
+        ><label
+          >Título personalizado <small>Opcional</small
+          ><input
+            id="column-title"
+            maxlength="100"
+            placeholder="Usar el nombre del contenido"
+        /></label>
+        <p id="column-editor-error" class="error" role="alert"></p>
+        <button id="save-column-editor" class="primary" type="submit">
+          Añadir columna
+        </button>
+      </form>
+    </dialog>
+    <dialog id="delete-dialog" class="confirm-dialog">
+      <button id="close-delete-dialog" class="dialog-close" aria-label="Cerrar">
+        ×</button
+      ><span class="eyebrow">Confirmar eliminación</span>
+      <h2 id="delete-dialog-title">¿Eliminar este elemento?</h2>
+      <p id="delete-dialog-message"></p>
+      <div class="confirm-preserved">
+        <span aria-hidden="true">✓</span>
+        <p id="delete-dialog-preserved"></p>
+      </div>
+      <div class="confirm-actions">
+        <button id="cancel-delete" class="secondary">Cancelar</button
+        ><button id="confirm-delete" class="danger confirm-danger">
+          Eliminar
+        </button>
+      </div>
+    </dialog>
+    <div id="toast" role="status" aria-live="polite"></div>
+    <script src="/static/i18n.js?v=20261023-6" defer></script>
+    <script src="/static/onboarding.js?v=20261022-9" defer></script>
+    <script src="/static/app.js?v=20261022-38" defer></script>
+  </body>
+</html>
