@@ -428,21 +428,42 @@ async function runExport() {
     if (!hasCredentials) return;
     const mode = $('update-mode').value;
     if (mode === 'quick' && !libraryRecord?.data.bookmarks.length) { log('Start with a full refresh or import an existing archive before using Quick update.', 'warn'); return; }
+    const previousRun = await getExportState('run_info');
+    const resumableReasons = new Set(['empty_pages', 'tab_interrupted', 'error', 'user_stopped', 'max_retries', 'network_error']);
+    const canResume = mode === 'full'
+      && previousRun?.user_id === currentUserId
+      && previousRun?.collection?.mode === 'full'
+      && previousRun?.collection?.bookmarks !== 'complete'
+      && previousRun?.collection?.bookmark_cursor
+      && resumableReasons.has(previousRun.collection.reason);
     setUIState('exporting');
     stopRequested = false;
     startElapsedTimer();
-    statBookmarks.textContent = '0';
-    statPages.textContent = '0';
-    runInfo = {
-      user_id: currentUserId, screen_name: currentScreenName,
-      started_at: new Date().toISOString(),
-      observed_at: new Date().toISOString(),
-      collection: { mode, bookmarks: 'partial', folders: 'unknown', folder_list: 'unknown', folder_contents: {}, reason: 'in_progress' },
-    };
+    const elapsedBefore = canResume ? Number(previousRun.duration_seconds || 0) : 0;
+    if (canResume) {
+      runInfo = {
+        ...previousRun,
+        finished_at: null,
+        resumed_at: new Date().toISOString(),
+        collection: { ...previousRun.collection, reason: 'resuming' },
+      };
+      statBookmarks.textContent = String(await getBookmarkCount());
+      statPages.textContent = String(runInfo.collection.bookmark_pages || 0);
+      log(`Resuming the full scan from page ${runInfo.collection.bookmark_pages || 0}.`, 'info');
+    } else {
+      statBookmarks.textContent = '0';
+      statPages.textContent = '0';
+      runInfo = {
+        user_id: currentUserId, screen_name: currentScreenName,
+        started_at: new Date().toISOString(),
+        observed_at: new Date().toISOString(),
+        collection: { mode, bookmarks: 'partial', folders: 'unknown', folder_list: 'unknown', folder_contents: {}, reason: 'in_progress' },
+      };
+    }
     let staged = false;
     try {
       await verifyRunAccount();
-      await clearAllData();
+      if (!canResume) await clearAllData();
       await persistRun();
       staged = true;
       await runExportInner();
@@ -452,7 +473,7 @@ async function runExport() {
     } finally {
       if (pauseGate) { pauseGate.resolve(); pauseGate = null; }
       runInfo.finished_at = new Date().toISOString();
-      runInfo.duration_seconds = Math.floor((Date.now() - startTime) / 1000);
+      runInfo.duration_seconds = elapsedBefore + Math.floor((Date.now() - startTime) / 1000);
       const archiveBefore = libraryRecord;
       try {
         if (staged) {
@@ -565,26 +586,30 @@ async function runExportInner() {
     },
   };
   if (runInfo.collection.mode === 'full') {
-    statPhase.textContent = 'Checking folders';
-    const folderResult = await fetchAllFolders({ queryId: currentQueryIds.BookmarkFoldersSlice, creds: currentCreds, ...callbacks });
-    runInfo.collection.folder_list = folderResult.complete ? 'complete' : 'partial';
-    const folders = folderResult.folders;
-    runInfo.collection.folder_reason = folderResult.reason;
-    statFolders.textContent = String(folders.length);
-    await persistRun();
-    if (folders.length && !currentQueryIds.BookmarkFolderTimeline && !stopRequested) {
-      const qid = await captureFolderQueryIdViaTab(folders[0].id, currentUserId, log, { shouldStop: () => stopRequested, shouldPause });
-      if (qid) { currentQueryIds.BookmarkFolderTimeline = qid; await storeQueryIds(currentUserId, { BookmarkFolderTimeline: qid }); }
+    if (runInfo.collection.folder_list !== 'complete' || runInfo.collection.folders !== 'complete') {
+      statPhase.textContent = 'Checking folders';
+      const folderResult = await fetchAllFolders({ queryId: currentQueryIds.BookmarkFoldersSlice, creds: currentCreds, ...callbacks });
+      runInfo.collection.folder_list = folderResult.complete ? 'complete' : 'partial';
+      const folders = folderResult.folders;
+      runInfo.collection.folder_reason = folderResult.reason;
+      statFolders.textContent = String(folders.length);
+      await persistRun();
+      if (folders.length && !currentQueryIds.BookmarkFolderTimeline && !stopRequested) {
+        const qid = await captureFolderQueryIdViaTab(folders[0].id, currentUserId, log, { shouldStop: () => stopRequested, shouldPause });
+        if (qid) { currentQueryIds.BookmarkFolderTimeline = qid; await storeQueryIds(currentUserId, { BookmarkFolderTimeline: qid }); }
+      }
+      await waitForCollection(BASE_DELAY_MS, () => stopRequested);
+      if (!stopRequested) await fetchFolderContents({
+        folders, queryId: currentQueryIds.BookmarkFolderTimeline, creds: currentCreds, ...callbacks,
+        onFolderProgress: (index, total, name) => { statFolders.textContent = `${index}/${total}`; statPhase.textContent = `Folder: ${name}`; },
+        onCoverage: async coverage => { runInfo.collection.folder_contents = coverage; await persistRun(); },
+      });
+      runInfo.collection.folders = folderResult.complete && folders.every(f => runInfo.collection.folder_contents[f.id] === 'complete') ? 'complete' : 'partial';
+      await persistRun();
+      await waitForCollection(BASE_DELAY_MS, () => stopRequested);
+    } else {
+      statFolders.textContent = String((await getAllFolders()).length);
     }
-    await waitForCollection(BASE_DELAY_MS, () => stopRequested);
-    if (!stopRequested) await fetchFolderContents({
-      folders, queryId: currentQueryIds.BookmarkFolderTimeline, creds: currentCreds, ...callbacks,
-      onFolderProgress: (index, total, name) => { statFolders.textContent = `${index}/${total}`; statPhase.textContent = `Folder: ${name}`; },
-      onCoverage: async coverage => { runInfo.collection.folder_contents = coverage; await persistRun(); },
-    });
-    runInfo.collection.folders = folderResult.complete && folders.every(f => runInfo.collection.folder_contents[f.id] === 'complete') ? 'complete' : 'partial';
-    await persistRun();
-    await waitForCollection(BASE_DELAY_MS, () => stopRequested);
   } else {
     statFolders.textContent = 'Not checked';
     log('Quick update checks recent pages until a whole page is already archived. Older bookmarks and folders are not refreshed.', 'warn');
@@ -593,15 +618,26 @@ async function runExportInner() {
   statPhase.textContent = runInfo.collection.mode === 'quick' ? 'Checking recent bookmarks' : 'Checking all bookmarks';
   const result = await fetchAllBookmarks({
     queryId: currentQueryIds.Bookmarks, creds: currentCreds, ...callbacks,
+    startingCursor: runInfo.collection.bookmark_cursor || null,
+    startingPage: Number(runInfo.collection.bookmark_pages || 0),
+    startingTotal: Number(runInfo.collection.bookmark_total || 0),
     knownIds: runInfo.collection.mode === 'quick' ? new Set(libraryRecord.data.bookmarks.map(b => b.tweet_id)) : undefined,
     onPage: async (tweets, pageNum) => {
       statBookmarks.textContent = String(await getBookmarkCount());
       statPages.textContent = String(pageNum);
       await persistRun();
     },
+    onCheckpoint: async ({ cursor, pageNum, totalTweets, consecutiveEmpty }) => {
+      runInfo.collection.bookmark_cursor = cursor;
+      runInfo.collection.bookmark_pages = pageNum;
+      runInfo.collection.bookmark_total = totalTweets;
+      runInfo.collection.consecutive_empty_pages = consecutiveEmpty;
+      await persistRun();
+    },
   });
   runInfo.collection.bookmarks = result.reason === 'complete' ? 'complete' : 'partial';
   runInfo.collection.reason = result.reason;
+  if (result.reason === 'complete') runInfo.collection.bookmark_cursor = null;
   await persistRun();
 }
 

@@ -57,3 +57,17 @@ export function jitteredDelay() {
   const multiplier = JITTER_MIN + Math.random() * (JITTER_MAX - JITTER_MIN);
   return BASE_DELAY_MS * multiplier;
 }
+
+/** Pace successful requests from X's advertised remaining quota. */
+export function rateLimitDelay(rateLimit, now = Date.now(), random = Math.random) {
+  const remaining = Number.parseInt(rateLimit?.remaining, 10);
+  const resetSeconds = Number.parseInt(rateLimit?.reset, 10);
+  if (!Number.isFinite(remaining) || !Number.isFinite(resetSeconds) || remaining <= 0) {
+    return jitteredDelay();
+  }
+  const windowMs = Math.max(0, resetSeconds * 1000 - now);
+  if (!windowMs) return 750 + random() * 250;
+  const evenPace = windowMs / Math.max(1, remaining);
+  const jitter = 0.9 + random() * 0.2;
+  return Math.max(750, Math.min(15_000, evenPace * jitter));
+}

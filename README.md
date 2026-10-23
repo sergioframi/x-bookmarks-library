@@ -52,7 +52,14 @@ Edit `PORT` in `.env`, then run the same Compose command:
 docker compose up -d --build
 ```
 
-The first build is the slow one. Later builds reuse Docker's cache.
+The first build is the slow one. Before the web application starts, Compose
+downloads, loads, and validates the local embedding model (about 241 MB). The
+model is kept in the `library-models` volume, so later starts reuse it instead
+of downloading it during onboarding.
+
+On hosts where Docker memory cgroups are enabled, optional container limits can
+be set with `MEM_LIMIT` and `MEMSWAP_LIMIT` in `.env`. Leave both at `0` on
+Raspberry Pi kernels that do not expose the memory controller.
 
 ## First run
 
@@ -72,8 +79,10 @@ The language selected during onboarding is also used for generated category
 names. Category names are library content, so changing the interface language
 later will not translate them.
 
-The first import downloads an embedding model of about 241 MB. The progress log
-shows what the server is doing while it creates embeddings and categories.
+The first import uses the model prepared during startup. The progress log shows
+what the server is doing while it creates embeddings and categories. If that
+local processing is interrupted, use **Retry enrichment**: the imported
+bookmarks remain available and do not need to be downloaded from X again.
 
 ## Using the library
 
@@ -122,6 +131,10 @@ receives the resulting bookmark archive, not your X credentials.
 
 Use **Sync now** for recent changes and **Full refresh** for a complete pass.
 Partial or interrupted scans never imply that a missing bookmark was deleted.
+An interrupted full refresh keeps its checkpoint and resumes from the last
+confirmed X cursor the next time you start it. Requests are paced from X's
+rate-limit headers, so a large archive may take a while without hammering the
+API.
 
 ## Data and privacy
 
@@ -142,6 +155,7 @@ port directly to the public Internet.
 ```sh
 scripts/healthcheck.sh
 docker compose logs -f --tail=100 app
+docker compose logs model-init
 scripts/backup.sh
 docker compose down
 docker compose up -d --build

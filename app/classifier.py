@@ -55,6 +55,16 @@ def classify(connection, *, only_unclassified: bool = False, semantic: bool = Tr
     profile=connection.execute("SELECT state,source FROM taxonomy_profiles WHERE id=1").fetchone()
     adaptive=bool(profile and profile["state"]=="active" and profile["source"]=="discovery")
     prototypes: dict[int,np.ndarray] = {}
+    embedding_rows = {
+        row["tweet_id"]: row
+        for row in connection.execute(
+            "SELECT tweet_id,vector,dimension FROM embeddings WHERE model=?", (MODEL,)
+        )
+    }
+    tag_ids = {
+        row["normalized"]: row["id"]
+        for row in connection.execute("SELECT id,normalized FROM tags")
+    }
     semantic_error = None
     if semantic and rows and not adaptive:
         leaf_rows = connection.execute("""
@@ -83,7 +93,7 @@ def classify(connection, *, only_unclassified: bool = False, semantic: bool = Tr
             score,evidence = evidence_for(terms,fields)
             if score >= 0.55:
                 assignments[category_ids[slug]] = (min(0.99,0.5 + score/3),evidence)
-        embedding_row = connection.execute("SELECT vector,dimension FROM embeddings WHERE tweet_id=? AND model=?",(tweet_id,MODEL)).fetchone()
+        embedding_row = embedding_rows.get(tweet_id)
         if adaptive and embedding_row:
             from .taxonomy_discovery import adaptive_assignments
             vector = np.frombuffer(embedding_row["vector"],dtype=np.float32)
@@ -116,8 +126,16 @@ def classify(connection, *, only_unclassified: bool = False, semantic: bool = Tr
             score,evidence = evidence_for(terms,fields)
             if score < 0.55: continue
             normalized=normalize_tag(name)
-            connection.execute("INSERT INTO tags(name,normalized) VALUES(?,?) ON CONFLICT(normalized) DO NOTHING",(name,normalized))
-            tag_id=connection.execute("SELECT id FROM tags WHERE normalized=?",(normalized,)).fetchone()[0]
+            tag_id=tag_ids.get(normalized)
+            if tag_id is None:
+                cursor=connection.execute(
+                    "INSERT INTO tags(name,normalized) VALUES(?,?) ON CONFLICT(normalized) DO NOTHING",
+                    (name,normalized),
+                )
+                tag_id=cursor.lastrowid or connection.execute(
+                    "SELECT id FROM tags WHERE normalized=?",(normalized,)
+                ).fetchone()[0]
+                tag_ids[normalized]=tag_id
             connection.execute("""INSERT INTO tag_assignments(tweet_id,tag_id,origin,confidence,evidence_json)
               VALUES(?,?,'auto',?,?) ON CONFLICT(tweet_id,tag_id,origin) DO UPDATE SET
               confidence=excluded.confidence,evidence_json=excluded.evidence_json""",
@@ -157,13 +175,33 @@ def rebuild_search_documents(connection, tweet_ids: list[str] | None = None) -> 
       FROM tweets t LEFT JOIN bookmark_quotes bq ON bq.bookmark_id=t.tweet_id
       LEFT JOIN tweets qt ON qt.tweet_id=bq.quoted_tweet_id WHERE t.is_bookmark=1
     """+selection,params).fetchall()
+    selected_ids={row["tweet_id"] for row in rows}
+    category_labels: dict[str,list[str]] = {}
+    tag_labels: dict[str,list[str]] = {}
+    if selected_ids:
+        selected_list=list(selected_ids)
+        for offset in range(0,len(selected_list),500):
+            group=selected_list[offset:offset+500]
+            placeholders=",".join("?" for _ in group)
+            for item in connection.execute(
+                f"""SELECT e.tweet_id,c.name FROM effective_category_assignments e
+                JOIN categories c ON c.id=e.category_id WHERE e.tweet_id IN ({placeholders})""",
+                tuple(group),
+            ):
+                category_labels.setdefault(item["tweet_id"],[]).append(item["name"])
+            for item in connection.execute(
+                f"""SELECT e.tweet_id,t.name FROM effective_tag_assignments e
+                JOIN tags t ON t.id=e.tag_id WHERE e.tweet_id IN ({placeholders})""",
+                tuple(group),
+            ):
+                tag_labels.setdefault(item["tweet_id"],[]).append(item["name"])
     for row in rows:
         urls=[]
         for item in json.loads(row["urls_json"] or "[]"):
             if isinstance(item,dict): urls.extend(filter(None,[item.get("url"),item.get("expanded_url")]))
         media=json.loads(row["media_json"] or "[]")
         alt=" ".join(str(x.get("alt_text") or "") for x in media if isinstance(x,dict))
-        labels=[r[0] for r in connection.execute("""SELECT c.name FROM effective_category_assignments e JOIN categories c ON c.id=e.category_id WHERE e.tweet_id=? UNION SELECT t.name FROM effective_tag_assignments e JOIN tags t ON t.id=e.tag_id WHERE e.tweet_id=?""",(row["tweet_id"],row["tweet_id"]))]
+        labels=[*category_labels.get(row["tweet_id"],[]),*tag_labels.get(row["tweet_id"],[])]
         main=row["display_text"] or ""
         card=" ".join(filter(None,[row["card_title"],row["card_description"],alt]))
         summary=(row["card_title"] or main[:280]).strip()

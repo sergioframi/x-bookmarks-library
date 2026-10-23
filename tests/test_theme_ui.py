@@ -168,11 +168,11 @@ def test_extension_is_english_only_and_prioritizes_private_library_connection(tm
     assert options.index('id="connector-section"') < options.index('id="library-section"')
     assert '<details id="library-section"' in options
     assert '<details id="log-section"' in options
-    assert manifest["version"] == "1.1.0.1"
-    assert manifest["version_name"] == "1.1.0-fork.1"
+    assert manifest["version"] == "1.1.0.2"
+    assert manifest["version_name"] == "1.1.0-fork.2"
     assert release["upstream_version"] == "1.1.0"
-    assert release["fork_revision"] == 1
-    assert "export const VERSION = '1.1.0-fork.1'" in (extension / "version.js").read_text()
+    assert release["fork_revision"] == 2
+    assert "export const VERSION = '1.1.0-fork.2'" in (extension / "version.js").read_text()
     assert "Original project: sytelus/xarchive" in options
     assert (extension / "NOTICE.md").is_file()
     package_path=tmp_path/"xarchive-connector.zip"
@@ -216,6 +216,8 @@ def test_first_run_onboarding_exposes_account_preferences_and_confirmation():
     assert 'importLaunchPending||extensionRunning||Boolean(enrichment.busy)' in compact(script)
     assert 'id="onboarding-activation-progress"' in script
     assert 'id="onboarding-activation-log"' in script
+    assert 'id="onboarding-retry-enrichment"' in script
+    assert 'api("/api/enrichment/retry",{method:"POST"})' in compact(script)
     assert 'activateAssigning' in script
     assert '.primary:disabled' in (STATIC / "styles.css").read_text()
 
@@ -226,6 +228,8 @@ def test_sync_dialog_exposes_server_progress_diagnostics_and_combined_log():
     for element_id in ("server-enrichment", "server-progress-bar", "sync-diagnostics", "sync-combined-log"):
         assert f'id="{element_id}"' in html
     assert 'api("/api/enrichment")' in compact(script)
+    assert 'api("/api/enrichment/retry",{method:"POST"})' in compact(script)
+    assert 'id="retry-enrichment"' in html
     assert "serverEnrichment?.busy" in script
     assert 'role="log"' in html
 

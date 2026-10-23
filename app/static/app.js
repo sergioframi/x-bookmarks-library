@@ -376,11 +376,15 @@ function renderSyncInspection() {
       .filter(Boolean)
       .join(" · ");
   }
+  const retry = $("#retry-enrichment"),
+    failed = ["failed", "interrupted", "embedding_failed_fts_available", "taxonomy_discovery_failed_search_available"].includes(job?.status);
+  retry?.classList.toggle("hidden", !failed || Boolean(serverEnrichment?.busy));
   const diagnostics = connectorStatus?.diagnostics || {},
     operations = diagnostics.queryOperations || {},
     fields = [
       ["Extensión", connectorStatus?.version || "No detectada"],
       ["Servidor", serverEnrichment?.busy ? "Ocupado" : "Disponible"],
+      ["Modelo local", serverEnrichment?.model?.ready ? "Preparado" : "No preparado"],
       ["Cuenta de X", diagnostics.accountDetected ? "Detectada" : "No detectada"],
       ["Credenciales", diagnostics.credentialsAvailable ? "Disponibles" : "No disponibles"],
       ["Consulta Bookmarks", operations.Bookmarks ? "Disponible" : "Pendiente"],
@@ -560,6 +564,20 @@ $("#extension-setup").addEventListener("toggle", (event) => {
 });
 $("#sync-quick").addEventListener("click", () => startLibrarySync("quick"));
 $("#sync-full").addEventListener("click", () => startLibrarySync("full"));
+$("#retry-enrichment").addEventListener("click", async (event) => {
+  const button = event.currentTarget;
+  button.disabled = true;
+  try {
+    serverEnrichment = await api("/api/enrichment/retry", { method: "POST" });
+    renderConnectorStatus();
+    renderSyncInspection();
+    toast("Procesamiento local reanudado");
+  } catch (error) {
+    toast(error.message);
+  } finally {
+    button.disabled = false;
+  }
+});
 $("#new-pairing-code").addEventListener("click", async () => {
   try {
     const result = await api("/api/v1/xarchive/pairing-codes", {

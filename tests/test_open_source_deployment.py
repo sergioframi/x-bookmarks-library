@@ -17,6 +17,14 @@ def test_compose_builds_locally_with_an_optional_host_port():
     assert '${DATA_VOLUME:-library-data}:/app/data' in compose
     assert "library-data:" in compose
     assert "SESSION_SECRET:${SESSION_SECRET:-}" in normalized
+    assert "model-init:" in compose
+    assert "condition:service_completed_successfully" in normalized
+    assert 'HF_HUB_DISABLE_XET:"1"' in normalized
+    assert "mem_limit:${MEM_LIMIT:-0}" in normalized
+    assert "memswap_limit:${MEMSWAP_LIMIT:-0}" in normalized
+    assert "cpus:${APP_CPUS:-0}" in normalized
+    assert "EMBEDDING_THREADS:${EMBEDDING_THREADS:-4}" in normalized
+    assert "EMBEDDING_RLIMIT_AS_MIB:${EMBEDDING_RLIMIT_AS_MIB:-2048}" in normalized
 
 
 def test_image_builds_the_extension_and_uses_a_fixed_internal_port():
@@ -25,6 +33,14 @@ def test_image_builds_the_extension_and_uses_a_fixed_internal_port():
     assert "build-extension-package.py" in dockerfile
     assert "EXPOSE 8080" in dockerfile
     assert '"--port","8080"' in compact(dockerfile)
+
+
+def test_runtime_dependencies_are_fully_pinned():
+    requirements=(ROOT/"requirements.txt").read_text().splitlines()
+    assert requirements
+    assert all("==" in line for line in requirements if line.strip() and not line.startswith("#"))
+    for dependency in ("huggingface_hub", "hf-xet", "onnxruntime", "tokenizers"):
+        assert any(line.startswith(f"{dependency}==") for line in requirements)
 
 
 def test_public_defaults_do_not_contain_private_deployment_coordinates():

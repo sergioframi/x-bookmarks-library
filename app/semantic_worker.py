@@ -17,6 +17,25 @@ class SemanticUnavailable(RuntimeError):
     """Semantic inference failed; callers must continue with FTS5."""
 
 
+@contextmanager
+def exclusive_embedding_file_lock(
+    lock_path: str | Path | None = None, *, blocking: bool = False
+) -> Iterator[None]:
+    """Serialize every ONNX model process, including bulk enrichment."""
+    path = Path(lock_path or os.getenv("EMBEDDING_LOCK_PATH", "/tmp/x-bookmarks-embedding.lock"))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lock_file = path.open("a+")
+    operation = fcntl.LOCK_EX | (0 if blocking else fcntl.LOCK_NB)
+    try:
+        fcntl.flock(lock_file.fileno(), operation)
+        yield
+    finally:
+        try:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+        finally:
+            lock_file.close()
+
+
 def available_memory_mib() -> float:
     try:
         for line in Path("/proc/meminfo").read_text().splitlines():
@@ -53,21 +72,13 @@ class OnDemandEmbeddingWorker:
     def _exclusive_slot(self) -> Iterator[None]:
         if not self._semaphore.acquire(timeout=0.25):
             raise SemanticUnavailable("encoder ocupado; se usa FTS5")
-        lock_file = None
         try:
-            self.lock_path.parent.mkdir(parents=True, exist_ok=True)
-            lock_file = self.lock_path.open("a+")
             try:
-                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                with exclusive_embedding_file_lock(self.lock_path):
+                    yield
             except BlockingIOError as exc:
                 raise SemanticUnavailable("encoder ocupado por otro proceso; se usa FTS5") from exc
-            yield
         finally:
-            if lock_file is not None:
-                try:
-                    fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
-                finally:
-                    lock_file.close()
             self._semaphore.release()
 
     def encode(self, texts: Sequence[str]) -> tuple[str, np.ndarray]:
@@ -89,7 +100,7 @@ class OnDemandEmbeddingWorker:
                     "OPENBLAS_NUM_THREADS": "2",
                     "TOKENIZERS_PARALLELISM": "false",
                     "EMBEDDING_THREADS": "2",
-                    "EMBEDDING_RLIMIT_AS_MIB": os.getenv("EMBEDDING_RLIMIT_AS_MIB", "1536"),
+                    "EMBEDDING_RLIMIT_AS_MIB": os.getenv("EMBEDDING_RLIMIT_AS_MIB", "2048"),
                 }
             )
             try:

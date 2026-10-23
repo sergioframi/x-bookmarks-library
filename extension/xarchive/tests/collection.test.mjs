@@ -45,7 +45,31 @@ test('unrecognized responses and looping cursors never claim complete', async ()
   assert.equal((await bad.context.fetchAllBookmarks({})).reason, 'unrecognized_response');
   assert.equal(bad.stored.length, 0);
   const loop = fetchContext([page(['1'], 'a'), page(['2'], 'b'), page(['3'], 'a')]);
-  assert.equal((await loop.context.fetchAllBookmarks({})).reason, 'pagination_guard');
+  assert.equal((await loop.context.fetchAllBookmarks({})).reason, 'repeated_cursor');
+});
+
+test('bookmark checkpoints allow a later run to continue from its saved cursor', async () => {
+  const first = fetchContext([page(['1'], 'next'), { error: 'auth_error' }]);
+  let checkpoint;
+  const interrupted = await first.context.fetchAllBookmarks({ onCheckpoint: value => { checkpoint = value; } });
+  assert.equal(interrupted.reason, 'auth_error');
+  assert.equal(checkpoint.cursor, 'next');
+  const resumed = fetchContext([page(['2'])]);
+  const result = await resumed.context.fetchAllBookmarks({
+    startingCursor: checkpoint.cursor,
+    startingPage: checkpoint.pageNum,
+    startingTotal: checkpoint.totalTweets,
+  });
+  assert.equal(result.reason, 'complete');
+  assert.equal(result.totalTweets, 2);
+  assert.equal(resumed.calls[0][2].cursor, 'next');
+});
+
+test('successful requests pace themselves from X rate-limit headers', () => {
+  const now = 1_000_000;
+  const delay = utils.rateLimitDelay({ remaining: '100', reset: String((now + 100_000) / 1000) }, now, () => 0.5);
+  assert.equal(delay, 1000);
+  assert.ok(utils.rateLimitDelay({}, now, () => 0.5) >= utils.BASE_DELAY_MS);
 });
 
 test('Stop while paused does not issue another request', async () => {

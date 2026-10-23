@@ -4,6 +4,8 @@ import json
 import sqlite3
 from typing import Any
 
+from .model_cache import model_cache_status
+
 
 LOCK_NAME = "sync-enrichment"
 
@@ -134,5 +136,5 @@ def enrichment_status(connection) -> dict[str, Any]:
         "busy": bool(lock), "lock": dict(lock) if lock else None,
         "job": dict(job) if job else None, "documents": documents,
         "embeddings": embeddings, "taxonomy_state": profile["state"] if profile else "empty",
-        "events": events,
+        "model": model_cache_status(), "events": events,
     }

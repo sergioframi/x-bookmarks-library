@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import pytest
+from fastapi import BackgroundTasks
 
 from app.db import connect, initialize_schema
+from app.main import retry_enrichment
 from app.progress import (
     EnrichmentBusy,
     acquire_enrichment_lock,
@@ -67,3 +69,19 @@ def test_progress_events_return_structured_details(tmp_path):
     event = enrichment_status(connection)["events"][-1]
     assert event["details"] == {"completed": 8, "total": 10}
     assert "details_json" not in event
+
+
+def test_failed_enrichment_can_be_retried_without_resending_the_archive(tmp_path):
+    connection = database(tmp_path)
+    connection.execute(
+        "INSERT INTO sync_runs(id,scan_id,archive_sha256,archive_path,started_at,status) "
+        "VALUES('run','scan','hash','archive.json',CURRENT_TIMESTAMP,'embedding_failed_fts_available')"
+    )
+    connection.commit()
+    background = BackgroundTasks()
+
+    result = retry_enrichment(background, connection, {})
+
+    assert result["busy"] is True
+    assert result["job"]["status"] == "queued"
+    assert len(background.tasks) == 1

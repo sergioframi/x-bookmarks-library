@@ -17,7 +17,7 @@ import { upsertBookmarks } from './db.js';
 import {
   BASE_DELAY_MS, MAX_RETRIES, COOLDOWN_MS,
   CONSECUTIVE_429_COOLDOWN, CONSECUTIVE_429_STOP, MAX_CONSECUTIVE_EMPTY,
-  waitForCollection, jitteredDelay,
+  waitForCollection, rateLimitDelay,
 } from './utils.js';
 
 /**
@@ -111,17 +111,17 @@ export async function fetchWithRetry({
 function shouldStopPaginating({ bottomCursor, currentCursor, consecutiveEmpty, onLog }) {
   if (!bottomCursor) {
     onLog?.('No more pages (no bottom cursor).', 'success');
-    return true;
+    return 'complete';
   }
   if (bottomCursor === currentCursor) {
     onLog?.('Pagination loop detected (same cursor returned). Stopping.', 'warn');
-    return true;
+    return 'repeated_cursor';
   }
   if (consecutiveEmpty >= MAX_CONSECUTIVE_EMPTY) {
     onLog?.(`${MAX_CONSECUTIVE_EMPTY} consecutive empty pages. Stopping.`, 'warn');
-    return true;
+    return 'empty_pages';
   }
-  return false;
+  return null;
 }
 
 /**
@@ -154,10 +154,14 @@ export async function fetchAllBookmarks({
   count = 100,
   beforeRequest,
   knownIds,
+  startingCursor = null,
+  startingPage = 0,
+  startingTotal = 0,
+  onCheckpoint,
 }) {
-  let cursor = null;
-  let pageNum = 0;
-  let totalTweets = 0;
+  let cursor = startingCursor;
+  let pageNum = startingPage;
+  let totalTweets = startingTotal;
   let consecutiveEmpty = 0;
   const state = { consecutive429s: 0 };
   const seenCursors = new Set();
@@ -199,14 +203,17 @@ export async function fetchAllBookmarks({
       onLog?.(`Page ${pageNum}: empty page (${consecutiveEmpty}/${MAX_CONSECUTIVE_EMPTY})`, 'info');
     }
 
+    await onCheckpoint?.({ cursor: bottomCursor, pageNum, totalTweets, consecutiveEmpty });
+
     if (knownIds && tweets.length && tweets.every(t => knownIds.has(t.tweet_id))) return { totalTweets, stopped: false, reason: 'quick_boundary' };
     if (!bottomCursor) break;
-    if (seenCursors.has(bottomCursor)) return { totalTweets, stopped: true, reason: 'pagination_guard' };
+    if (seenCursors.has(bottomCursor)) return { totalTweets, stopped: true, reason: 'repeated_cursor' };
+    const guard = shouldStopPaginating({ bottomCursor, currentCursor: cursor, consecutiveEmpty, onLog });
+    if (guard && guard !== 'complete') return { totalTweets, stopped: true, reason: guard };
     seenCursors.add(bottomCursor);
-    if (shouldStopPaginating({ bottomCursor, currentCursor: cursor, consecutiveEmpty, onLog })) return { totalTweets, stopped: true, reason: 'pagination_guard' };
 
     cursor = bottomCursor;
-    await waitForCollection(jitteredDelay(), shouldStop);
+    await waitForCollection(rateLimitDelay(result.rateLimit), shouldStop);
   }
 
   return { totalTweets, stopped: false, reason: 'complete' };
@@ -244,10 +251,14 @@ export async function fetchFolderBookmarks({
   shouldPause,
   count = 50,
   beforeRequest,
+  startingCursor = null,
+  startingPage = 0,
+  startingTotal = 0,
+  onCheckpoint,
 }) {
-  let cursor = null;
-  let pageNum = 0;
-  let totalTweets = 0;
+  let cursor = startingCursor;
+  let pageNum = startingPage;
+  let totalTweets = startingTotal;
   let consecutiveEmpty = 0;
   const state = { consecutive429s: 0 };
   const seenCursors = new Set();
@@ -284,13 +295,16 @@ export async function fetchFolderBookmarks({
       consecutiveEmpty++;
     }
 
+    await onCheckpoint?.({ cursor: bottomCursor, pageNum, totalTweets, consecutiveEmpty });
+
     if (!bottomCursor) break;
-    if (seenCursors.has(bottomCursor)) return { totalTweets, stopped: true, reason: 'pagination_guard' };
+    if (seenCursors.has(bottomCursor)) return { totalTweets, stopped: true, reason: 'repeated_cursor' };
+    const guard = shouldStopPaginating({ bottomCursor, currentCursor: cursor, consecutiveEmpty });
+    if (guard && guard !== 'complete') return { totalTweets, stopped: true, reason: guard };
     seenCursors.add(bottomCursor);
-    if (shouldStopPaginating({ bottomCursor, currentCursor: cursor, consecutiveEmpty })) return { totalTweets, stopped: true, reason: 'pagination_guard' };
 
     cursor = bottomCursor;
-    await waitForCollection(jitteredDelay(), shouldStop);
+    await waitForCollection(rateLimitDelay(result.rateLimit), shouldStop);
   }
 
   return { totalTweets, stopped: false, reason: 'complete' };

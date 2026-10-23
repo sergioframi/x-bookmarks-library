@@ -12,11 +12,12 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-from .classifier import classify, rebuild_search_documents
+from .classifier import classify
 from .config import settings
 from .db import connect
 from .importer import canonical_json, import_xarchive
 from .progress import add_event,release_enrichment_lock,update_job
+from .semantic_worker import exclusive_embedding_file_lock
 
 
 PAIRING_TTL_MINUTES = 10
@@ -212,7 +213,6 @@ def process_sync(connection, device, payload: dict[str, Any]) -> dict[str, Any]:
     digest, path = _write_archive(archive)
     report = import_xarchive(connection, path)
     lifecycle = _reconcile_lifecycle(connection, scan_id, snapshot)
-    rebuild_search_documents(connection)
     classification = classify(connection, only_unclassified=True, semantic=False)
     collection = ((snapshot or archive).get("export_metadata") or {}).get("collection") or {}
     run_id = str(uuid.uuid4())
@@ -251,19 +251,22 @@ def run_incremental_embeddings(sync_id: str, lock_owner: str | None = None) -> N
               "Modelo local de embeddings iniciado")
             connection.commit()
         environment=os.environ.copy();environment["ENRICHMENT_JOB_ID"]=sync_id
-        completed=subprocess.run(
-            [sys.executable, "/app/manage.py", "embed"],
-            check=True,
-            timeout=3600,
-            capture_output=True,
-            text=True,
-            env=environment,
-        )
+        environment.setdefault("RUST_BACKTRACE", "1")
+        with exclusive_embedding_file_lock(blocking=True):
+            completed=subprocess.run(
+                [sys.executable, "/app/manage.py", "embed"],
+                check=True,
+                timeout=3600,
+                capture_output=True,
+                text=True,
+                env=environment,
+            )
     except Exception as exc:
         status = "embedding_failed_fts_available"
         failure = str(exc)
-        if isinstance(exc,subprocess.CalledProcessError) and exc.stderr:
-            failure=exc.stderr.strip().splitlines()[-1][:500]
+        if isinstance(exc,subprocess.CalledProcessError):
+            diagnostic=(exc.stderr or exc.stdout or str(exc)).strip()
+            failure=diagnostic[-4000:] if diagnostic else str(exc)
     try:
         with connect(settings.database_path) as connection:
             if status == "ready":

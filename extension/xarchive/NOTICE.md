@@ -5,7 +5,7 @@ This distribution is an unofficial fork of
 
 - Upstream version: `1.1.0`
 - Upstream commit: `ae9d0263617a200ce142e64fb2ddc6301ebf19cf`
-- Fork release: `1.1.0-fork.1`
+- Fork release: `1.1.0-fork.2`
 
 The fork adds integration with a self-hosted X Bookmarks Library, including
 browser-to-library pairing, direct synchronization, progress reporting, and

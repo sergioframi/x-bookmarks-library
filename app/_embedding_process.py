@@ -16,7 +16,7 @@ DEFAULT_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 
 
 def main() -> int:
-    address_limit_mib = int(os.getenv("EMBEDDING_RLIMIT_AS_MIB", "1536"))
+    address_limit_mib = int(os.getenv("EMBEDDING_RLIMIT_AS_MIB", "2048"))
     if address_limit_mib > 0:
         address_limit = address_limit_mib * 1024 * 1024
         resource.setrlimit(resource.RLIMIT_AS, (address_limit, address_limit))

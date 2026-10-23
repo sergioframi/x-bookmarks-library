@@ -15,10 +15,11 @@ def main():
     sub.add_parser("migrate")
     imp=sub.add_parser("import");imp.add_argument("path")
     classify=sub.add_parser("classify");classify.add_argument("--only-unclassified",action="store_true");classify.add_argument("--no-semantic",action="store_true")
-    embed=sub.add_parser("embed");embed.add_argument("--all",action="store_true");embed.add_argument("--batch-size",type=int,default=16)
+    embed=sub.add_parser("embed");embed.add_argument("--all",action="store_true");embed.add_argument("--batch-size",type=int,default=32)
     sub.add_parser("rebuild-fts")
     sub.add_parser("discover-taxonomy")
     sub.add_parser("finalize-taxonomy")
+    sub.add_parser("prepare-model")
     bootstrap=sub.add_parser("bootstrap");bootstrap.add_argument("path")
     backup=sub.add_parser("backup");backup.add_argument("destination")
     sub.add_parser("stats")
@@ -27,6 +28,9 @@ def main():
     if args.command=="hash-password":
         from app.security import hash_password
         print(hash_password(args.password));return
+    if args.command=="prepare-model":
+        from app.model_cache import prepare_embedding_model
+        print(json.dumps(prepare_embedding_model(),ensure_ascii=False,indent=2));return
     settings.database_path.parent.mkdir(parents=True,exist_ok=True)
     connection=connect(settings.database_path);initialize_schema(connection)
     try:

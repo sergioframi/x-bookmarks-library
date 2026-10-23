@@ -14,7 +14,7 @@
 import { parseFolderList } from './parser.js';
 import { upsertFolders, saveFolderPage } from './db.js';
 import { fetchFolderBookmarks, fetchWithRetry } from './fetcher.js';
-import { BASE_DELAY_MS, waitForCollection } from './utils.js';
+import { BASE_DELAY_MS, rateLimitDelay, waitForCollection } from './utils.js';
 
 /**
  * Fetch all bookmark folders for the logged-in user.
@@ -61,7 +61,7 @@ export async function fetchAllFolders({ queryId, creds, onLog, beforeRequest, sh
     if (cursors.has(nextCursor)) { reason = 'pagination_guard'; break; }
     cursors.add(nextCursor);
     cursor = nextCursor;
-    await waitForCollection(BASE_DELAY_MS, shouldStop);
+    await waitForCollection(rateLimitDelay(request.result.rateLimit), shouldStop);
   }
 
   if (allFolders.length > 0) {

@@ -14,6 +14,7 @@ from pydantic import BaseModel,ConfigDict,Field
 from .classifier import normalize_tag,rebuild_search_documents
 from .config import ensure_session_secret,settings
 from .db import connect,initialize_schema
+from .model_cache import model_cache_status
 from .progress import (EnrichmentBusy,acquire_enrichment_lock,create_enrichment_job,
     enrichment_status,recover_interrupted,release_enrichment_lock)
 from .search import SearchEngine,filter_candidates
@@ -144,7 +145,8 @@ def health():
         with connect(settings.database_path) as connection:
             connection.execute("SELECT 1").fetchone()
             count=connection.execute("SELECT count(*) FROM tweets WHERE is_bookmark=1 AND bookmark_state NOT IN ('removed','locally_archived')").fetchone()[0]
-        return {"status":"ok","bookmarks":count,"semantic_worker":"on_demand_not_resident","fts5":"available"}
+        return {"status":"ok","bookmarks":count,"semantic_worker":"on_demand_not_resident",
+          "embedding_model":model_cache_status(),"fts5":"available"}
     except Exception as exc: raise HTTPException(503,f"database unavailable: {type(exc).__name__}")
 
 
@@ -600,6 +602,21 @@ def devices(connection=Depends(db),_=Depends(session_data)):
 
 @app.get("/api/enrichment")
 def enrichment(connection=Depends(db),_=Depends(session_data)):
+    return enrichment_status(connection)
+
+
+@app.post("/api/enrichment/retry")
+def retry_enrichment(background:BackgroundTasks,connection=Depends(db),_=Depends(csrf_session)):
+    run=connection.execute("""SELECT id,status FROM sync_runs
+      WHERE status IN ('interrupted','embedding_failed_fts_available',
+        'taxonomy_discovery_failed_search_available','failed')
+      ORDER BY started_at DESC LIMIT 1""").fetchone()
+    if not run:raise HTTPException(409,"No hay un enriquecimiento fallido que reintentar")
+    owner=f"user:retry:{run['id']}"
+    try:acquire_enrichment_lock(connection,owner)
+    except EnrichmentBusy as exc:raise HTTPException(409,str(exc))
+    create_enrichment_job(connection,run["id"])
+    background.add_task(run_incremental_embeddings,run["id"],owner)
     return enrichment_status(connection)
 
 

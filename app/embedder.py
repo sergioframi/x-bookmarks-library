@@ -13,9 +13,9 @@ def chunks(values: list, size: int) -> Iterable[list]:
         yield values[offset:offset+size]
 
 
-def generate_embeddings(connection, *, only_missing: bool = True, batch_size: int = 16,
+def generate_embeddings(connection, *, only_missing: bool = True, batch_size: int = 32,
                         progress_callback:Callable[[int,int],None]|None=None) -> dict:
-    limit_mib=int(os.getenv("EMBEDDING_RLIMIT_AS_MIB","1536"))
+    limit_mib=int(os.getenv("EMBEDDING_RLIMIT_AS_MIB","2048"))
     if limit_mib:
         limit=limit_mib*1024*1024
         resource.setrlimit(resource.RLIMIT_AS,(limit,limit))
@@ -30,7 +30,9 @@ def generate_embeddings(connection, *, only_missing: bool = True, batch_size: in
     total=connection.execute("SELECT count(*) FROM search_documents WHERE embedding_text<>''").fetchone()[0]
     base=max(0,total-len(rows))
     if progress_callback:progress_callback(base,total)
-    model=TextEmbedding(model_name=MODEL,cache_dir=os.getenv("FASTEMBED_CACHE_PATH","/app/models/fastembed"),threads=2)
+    threads=max(1,min(int(os.getenv("EMBEDDING_THREADS","4")),4))
+    model=TextEmbedding(model_name=MODEL,
+      cache_dir=os.getenv("FASTEMBED_CACHE_PATH","/app/models/fastembed"),threads=threads)
     done=0
     for group in chunks(list(rows),batch_size):
         vectors=model.embed([row["embedding_text"] for row in group],batch_size=batch_size)

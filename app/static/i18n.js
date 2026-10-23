@@ -225,6 +225,8 @@
     "Sincronizando…": "Synchronizing…",
     "Revisión completa iniciada": "Full refresh started",
     "Sincronización iniciada": "Synchronization started",
+    "Reintentar procesamiento local": "Retry local processing",
+    "Procesamiento local reanudado": "Local processing resumed",
     "Versión": "Version",
     "Descargar extensión": "Download extension",
     "Revocado": "Revoked",

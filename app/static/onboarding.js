@@ -72,7 +72,9 @@
       taxonomyLabels: "Nombrando categoría {completed} de {total}…",
       taxonomyReady: "Borrador de categorías preparado.",
       retryImport:
-        "El procesamiento anterior está detenido. Inicia una nueva importación para continuar desde los embeddings ya guardados.",
+        "El procesamiento anterior está detenido. Puedes reintentarlo sin volver a leer los bookmarks de X.",
+      retryEnrichment: "Reintentar procesamiento",
+      retryingEnrichment: "Reanudando el procesamiento local…",
       extensionProgress: "Progreso",
       diagnostics: "Diagnóstico",
       activityLog: "Registro de actividad",
@@ -184,7 +186,9 @@
       taxonomyLabels: "Naming category {completed} of {total}…",
       taxonomyReady: "Category draft prepared.",
       retryImport:
-        "The previous processing job is stopped. Start a new import to continue from the saved embeddings.",
+        "The previous processing job is stopped. You can retry it without reading your X bookmarks again.",
+      retryEnrichment: "Retry processing",
+      retryingEnrichment: "Restarting local processing…",
       extensionProgress: "Progress",
       diagnostics: "Diagnostics",
       activityLog: "Activity log",
@@ -300,7 +304,7 @@
       account: `<span class="eyebrow">${t("eyebrow")}</span><h1>${t("accountTitle")}</h1><p>${t("accountText")}</p><form id="onboarding-account-form"><label>${t("user")}<input id="setup-user" autocomplete="username" minlength="2" maxlength="100" required autofocus></label><label>${t("password")}<input id="setup-password" type="password" autocomplete="new-password" minlength="12" maxlength="500" required><small>${t("passwordHelp")}</small></label><label>${t("repeat")}<input id="setup-repeat" type="password" autocomplete="new-password" minlength="12" maxlength="500" required></label><p id="onboarding-error" class="error" role="alert"></p><button class="primary" type="submit">${t("create")}</button></form>`,
       welcome: `<span class="eyebrow">${t("eyebrow")}</span><h1>${t("welcomeTitle")}</h1><p>${t("welcomeText")}</p><h2>${t("languageTitle")}</h2><div class="onboarding-choice"><button data-onboarding-locale="es" class="${locale() === "es" ? "active" : ""}"><strong>${t("spanish")}</strong><small>${t("spanishHelp")}</small></button><button data-onboarding-locale="en" class="${locale() === "en" ? "active" : ""}"><strong>${t("english")}</strong><small>${t("englishHelp")}</small></button></div><div class="onboarding-notice">${t("warning")}</div><div class="onboarding-actions"><button class="primary" data-next="extension">${t("continue")}</button></div>`,
       extension: `<span class="eyebrow">${t("eyebrow")}</span><h1>${t("extensionTitle")}</h1><p>${t("extensionText")}</p><ol class="onboarding-install"><li>${t("install1")}</li><li>${t("install2")}</li><li>${t("install3")}</li></ol><div id="onboarding-extension-package" class="onboarding-status">…</div><div class="onboarding-actions"><button class="secondary" id="onboarding-code">${t("code")}</button><a class="primary" id="onboarding-download" href="#">${t("download")}</a></div><div id="onboarding-pairing" class="onboarding-code"></div><p id="onboarding-error" class="error"></p><div class="onboarding-actions"><button class="primary" id="onboarding-check-device">${t("checkConnection")}</button></div>`,
-      import: `<span class="eyebrow">${t("eyebrow")}</span><h1>${t("importTitle")}</h1><p>${t("importText")}</p><div id="onboarding-import-status" class="onboarding-status">${t("waiting")}</div><section id="onboarding-extension-progress" class="onboarding-live-progress hidden"><header><strong>${t("extensionProgress")}</strong><span id="onboarding-progress-source"></span></header><div class="onboarding-live-track"><span id="onboarding-live-bar"></span></div><div class="onboarding-live-stats"><div><small>${t("phase")}</small><strong id="onboarding-stat-phase">—</strong></div><div><small>${t("bookmarks")}</small><strong id="onboarding-stat-bookmarks">0</strong></div><div><small>${t("pages")}</small><strong id="onboarding-stat-pages">0</strong></div><div><small>${t("folders")}</small><strong id="onboarding-stat-folders">—</strong></div><div><small>${t("speed")}</small><strong id="onboarding-stat-speed">—</strong></div><div><small>${t("elapsed")}</small><strong id="onboarding-stat-elapsed">0:00</strong></div></div></section><details id="onboarding-extension-diagnostics" class="onboarding-diagnostics"><summary><span>${t("diagnostics")}</span><small>${t("activityLog")}</small></summary><div id="onboarding-diagnostic-summary" class="onboarding-diagnostic-summary"></div><section class="onboarding-import-log"><header><strong>${t("activity")}</strong><span aria-hidden="true">●</span></header><div id="onboarding-import-log" role="log" aria-live="polite"></div></section></details><p id="onboarding-error" class="error"></p><div class="onboarding-actions"><button class="primary" id="onboarding-start-import">${t("startImport")}</button></div>`,
+      import: `<span class="eyebrow">${t("eyebrow")}</span><h1>${t("importTitle")}</h1><p>${t("importText")}</p><div id="onboarding-import-status" class="onboarding-status">${t("waiting")}</div><section id="onboarding-extension-progress" class="onboarding-live-progress hidden"><header><strong>${t("extensionProgress")}</strong><span id="onboarding-progress-source"></span></header><div class="onboarding-live-track"><span id="onboarding-live-bar"></span></div><div class="onboarding-live-stats"><div><small>${t("phase")}</small><strong id="onboarding-stat-phase">—</strong></div><div><small>${t("bookmarks")}</small><strong id="onboarding-stat-bookmarks">0</strong></div><div><small>${t("pages")}</small><strong id="onboarding-stat-pages">0</strong></div><div><small>${t("folders")}</small><strong id="onboarding-stat-folders">—</strong></div><div><small>${t("speed")}</small><strong id="onboarding-stat-speed">—</strong></div><div><small>${t("elapsed")}</small><strong id="onboarding-stat-elapsed">0:00</strong></div></div></section><details id="onboarding-extension-diagnostics" class="onboarding-diagnostics"><summary><span>${t("diagnostics")}</span><small>${t("activityLog")}</small></summary><div id="onboarding-diagnostic-summary" class="onboarding-diagnostic-summary"></div><section class="onboarding-import-log"><header><strong>${t("activity")}</strong><span aria-hidden="true">●</span></header><div id="onboarding-import-log" role="log" aria-live="polite"></div></section></details><p id="onboarding-error" class="error"></p><div class="onboarding-actions"><button class="secondary hidden" id="onboarding-retry-enrichment">${t("retryEnrichment")}</button><button class="primary" id="onboarding-start-import">${t("startImport")}</button></div>`,
       categories: categoriesTemplate(),
       category_confirmation: confirmationTemplate(),
     };
@@ -384,6 +388,7 @@
     q("#onboarding-code")?.addEventListener("click", createCode);
     q("#onboarding-check-device")?.addEventListener("click", checkDevice);
     q("#onboarding-start-import")?.addEventListener("click", startImport);
+    q("#onboarding-retry-enrichment")?.addEventListener("click", retryEnrichment);
     q("#onboarding-review")?.addEventListener("click", reviewCategories);
     q("#onboarding-back")?.addEventListener("click", () => move("categories"));
     q("#onboarding-activate")?.addEventListener("click", activateCategories);
@@ -621,6 +626,8 @@
       job = ctx.connectorStatus?.()?.syncState || {};
     const connector = ctx.connectorStatus?.() || {},
       extensionRunning = job.status === "running";
+    const failed = ["failed", "interrupted", "embedding_failed_fts_available", "taxonomy_discovery_failed_search_available"].includes(localJob.status),
+      retryButton = q("#onboarding-retry-enrichment");
     if (extensionRunning || enrichment.busy) importLaunchPending = false;
     if (job.status === "error" || (job.status === "completed" && !enrichment.busy))
       importLaunchPending = false;
@@ -630,6 +637,7 @@
       button.textContent = busy ? t("importWorking") : t("startImport");
       button.toggleAttribute("aria-busy", busy);
     }
+    retryButton?.classList.toggle("hidden", !failed || busy);
     renderLiveProgress(job, enrichment);
     renderConnectorDiagnostics(connector);
     for (const [index, entry] of (connector.logs || []).entries())
@@ -698,6 +706,20 @@
         `${enrichment.busy ? "preparing" : "retry"}:${onboarding.bookmarks}`,
       );
     } else box.textContent = t("waiting");
+  }
+  async function retryEnrichment(event) {
+    const button = event.currentTarget;
+    button.disabled = true;
+    q("#onboarding-error").textContent = "";
+    try {
+      onboarding.enrichment = await ctx.api("/api/enrichment/retry", { method: "POST" });
+      appendImportLog(t("retryingEnrichment"), `retry-enrichment:${Date.now()}`);
+      await checkImport();
+    } catch (error) {
+      q("#onboarding-error").textContent = error.message;
+    } finally {
+      button.disabled = false;
+    }
   }
   function pollImport() {
     clearTimeout(pollTimer);
